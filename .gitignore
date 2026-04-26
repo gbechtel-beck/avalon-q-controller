@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+*.log
+data/
+.DS_Store
+
+# Local data dirs (when running standalone)
+avalonq_data/
+/data/

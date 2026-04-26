@@ -1,0 +1,65 @@
+manifestVersion: 1
+id: avalon-q-controller
+name: Avalon Q Controller
+tagline: Schedule, monitor, and rotate pools across a fleet of Avalon Q miners
+category: bitcoin
+version: "2.0.0"
+port: 8118
+description: >-
+  A self-hosted controller and scheduler for one or more Canaan Avalon Q home
+  Bitcoin miners. Talks directly to each miner's CGMiner-compatible API on
+  port 4028. No cloud, no telemetry — your credentials, schedules, and
+  metrics history live only on your Umbrel.
+
+  What it does
+  ------------
+  • Manage a fleet of Avalon Q miners from one dashboard.
+  • Auto-discover miners on your LAN with the built-in scanner, or add by
+    IP manually.
+  • Real-time per-miner status: workmode, hashrate, power draw, J/TH
+    efficiency, chip temps, fan, shares, active pool.
+  • 24-hour history charts for hashrate, power, temperature, and workmode,
+    sampled every poll cycle and stored in SQLite.
+  • Pool library: define stratum pools per miner with worker and password,
+    and apply them with one click (with or without auto-reboot).
+  • Pool-rotation scheduler: rules can switch the active pool, change
+    workmode, soft-off, or soft-on. Each rule is a
+    (days × time-window × season) → action mapping with priority ordering.
+    Time windows can wrap past midnight; seasons limit rules to a date
+    range (e.g. winter rates only).
+  • Per-rule pool-switch options: optionally chain a workmode change, and
+    optionally reboot the miner so the new pool takes effect immediately.
+  • Manual override and pause for ad-hoc control without losing your rules.
+  • Manual control panel: workmode, soft-off, soft-on, LCD on/off, reboot.
+  • Full audit log of every command and state transition.
+
+  Typical use cases
+  -----------------
+  • Avoid utility on-peak hours by soft-off-ing during the peak window
+    (any utility, any region — entirely configurable).
+  • Switch to a high-fee-but-paid-instantly pool during peak hours and a
+    solo pool during off-peak.
+  • Run Super mode only during cheap-rate windows; drop to Eco overnight
+    for noise reasons.
+  • Coordinate with HVAC or solar — define arbitrary windows.
+
+  Pool-switching note
+  -------------------
+  The Avalon Q firmware applies a pool change on next reboot. The app can
+  send a reboot for you (per-rule option), but every reboot forfeits any
+  in-flight shares — keep that in mind for high-priority work.
+
+  This app does not require Bitcoin Core or any other Umbrel app.
+developer: Precision Heavy Haul Inc.
+website: https://github.com/gbechtel-beck/avalon-q-controller
+submitter: gbechtel-beck
+submission: https://github.com/gbechtel-beck/avalon-q-controller
+repo: https://github.com/gbechtel-beck/avalon-q-controller
+support: https://github.com/gbechtel-beck/avalon-q-controller/issues
+gallery:
+  - 1.jpg
+  - 2.jpg
+  - 3.jpg
+releaseNotes: >-
+  v2.0 — multi-miner support, pool library, pool-rotation scheduling,
+  24-hour history charts, LAN discovery, full SQLite persistence.

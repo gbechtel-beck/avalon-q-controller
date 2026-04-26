@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Avalon Q Controller</title>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="28" height="28">
+          <path d="M4 24 L16 4 L28 24 Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+          <circle cx="16" cy="18" r="2.6" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="brand__text">
+        <div class="brand__title">Avalon Q Controller</div>
+        <div class="brand__sub" id="versionLabel">v2.0 · multi-miner</div>
+      </div>
+    </div>
+    <div class="topbar__right">
+      <button class="btn btn--ghost" id="btnAllEvents">Events</button>
+    </div>
+  </header>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <div class="layout">
+    <!-- ====================== FLEET SIDEBAR ====================== -->
+    <aside class="sidebar">
+      <div class="sidebar__head">
+        <div class="sidebar__title">FLEET</div>
+        <div class="sidebar__actions">
+          <button class="btn btn--small" id="btnAddMiner" title="Add miner">+</button>
+          <button class="btn btn--small btn--ghost" id="btnScan" title="Scan LAN">⌕</button>
+        </div>
+      </div>
+      <div id="minerList" class="miner-list"></div>
+      <div class="sidebar__foot">
+        <div id="fleetSummary" class="fleet-summary muted small">—</div>
+      </div>
+    </aside>
+
+    <!-- ====================== MAIN ====================== -->
+    <main class="main">
+      <!-- WHEN NO MINER SELECTED -->
+      <section class="panel" data-view="empty">
+        <div class="empty">
+          <h1>No miners yet</h1>
+          <p class="muted">Add your first Avalon Q to get started.</p>
+          <div class="row">
+            <button class="btn btn--primary" id="btnEmptyAdd">+ Add miner</button>
+            <button class="btn" id="btnEmptyScan">Scan LAN</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TABS for selected miner -->
+      <div class="miner-pane" data-view="miner" hidden>
+        <div class="miner-pane__head">
+          <div>
+            <div class="miner-pane__name" id="paneName">—</div>
+            <div class="miner-pane__addr muted small" id="paneAddr">—</div>
+          </div>
+          <nav class="tabs" role="tablist">
+            <button class="tab is-active" data-tab="dashboard" role="tab">Dashboard</button>
+            <button class="tab" data-tab="charts" role="tab">Charts</button>
+            <button class="tab" data-tab="pools" role="tab">Pools</button>
+            <button class="tab" data-tab="schedule" role="tab">Schedule</button>
+            <button class="tab" data-tab="control" role="tab">Control</button>
+            <button class="tab" data-tab="settings" role="tab">Settings</button>
+            <button class="tab" data-tab="events" role="tab">Events</button>
+          </nav>
+        </div>
+
+        <!-- DASHBOARD -->
+        <section class="tab-panel is-active" data-tab-panel="dashboard">
+          <div class="grid">
+            <div class="card card--accent">
+              <div class="card__label">Workmode</div>
+              <div class="card__value" id="kWorkmode">—</div>
+              <div class="card__sub" id="kWorkmodeSub">—</div>
+            </div>
+            <div class="card">
+              <div class="card__label">Hashrate</div>
+              <div class="card__value" id="kHashrate">—</div>
+              <div class="card__sub">TH/s</div>
+            </div>
+            <div class="card">
+              <div class="card__label">Power Draw</div>
+              <div class="card__value" id="kPower">—</div>
+              <div class="card__sub">Watts</div>
+            </div>
+            <div class="card">
+              <div class="card__label">Efficiency</div>
+              <div class="card__value" id="kEfficiency">—</div>
+              <div class="card__sub">J/TH</div>
+            </div>
+            <div class="card">
+              <div class="card__label">Hashboard Max</div>
+              <div class="card__value" id="kTempMax">—</div>
+              <div class="card__sub">°C peak chip</div>
+            </div>
+            <div class="card">
+              <div class="card__label">Chassis Temp</div>
+              <div class="card__value" id="kTempChassis">—</div>
+              <div class="card__sub">°C ambient</div>
+            </div>
+            <div class="card">
+              <div class="card__label">Fan</div>
+              <div class="card__value" id="kFan">—</div>
+              <div class="card__sub">% relative</div>
+            </div>
+            <div class="card">
+              <div class="card__label">Uptime</div>
+              <div class="card__value" id="kUptime">—</div>
+              <div class="card__sub">since boot</div>
+            </div>
+          </div>
+
+          <div class="grid grid--2">
+            <div class="card card--wide">
+              <div class="card__label">Scheduler State</div>
+              <div class="kv">
+                <div><span class="kv__k">Mode</span><span id="schedMode" class="kv__v">—</span></div>
+                <div><span class="kv__k">Target</span><span id="schedAction" class="kv__v">—</span></div>
+                <div><span class="kv__k">Source</span><span id="schedSource" class="kv__v">—</span></div>
+                <div><span class="kv__k">Last applied</span><span id="schedApplied" class="kv__v">—</span></div>
+                <div><span class="kv__k">Last poll</span><span id="schedPoll" class="kv__v">—</span></div>
+              </div>
+              <div class="row">
+                <button class="btn" id="btnPauseToggle">Pause schedule</button>
+                <button class="btn btn--ghost" id="btnClearOverride">Clear override</button>
+                <button class="btn btn--ghost" id="btnRefresh">Refresh</button>
+              </div>
+            </div>
+
+            <div class="card card--wide">
+              <div class="card__label">Shares & Pool</div>
+              <div class="kv">
+                <div><span class="kv__k">Active pool</span><span id="kPoolUrl" class="kv__v">—</span></div>
+                <div><span class="kv__k">Accepted</span><span id="kAccepted" class="kv__v">—</span></div>
+                <div><span class="kv__k">Rejected</span><span id="kRejected" class="kv__v">—</span></div>
+                <div><span class="kv__k">HW errors</span><span id="kHwErr" class="kv__v">—</span></div>
+                <div><span class="kv__k">Hashrate (5s)</span><span id="kHash5s" class="kv__v">—</span></div>
+                <div><span class="kv__k">Hashrate (1m)</span><span id="kHash1m" class="kv__v">—</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CHARTS -->
+        <section class="tab-panel" data-tab-panel="charts" hidden>
+          <div class="panel-head">
+            <h2>24-hour history</h2>
+            <div class="panel-actions">
+              <button class="btn btn--ghost" id="btnReloadCharts">Reload</button>
+            </div>
+          </div>
+          <div class="card card--wide chart-card">
+            <div class="chart-title">Hashrate (TH/s)</div>
+            <canvas id="chartHash" class="chart" width="1100" height="200"></canvas>
+          </div>
+          <div class="card card--wide chart-card">
+            <div class="chart-title">Power Draw (W)</div>
+            <canvas id="chartPower" class="chart" width="1100" height="200"></canvas>
+          </div>
+          <div class="card card--wide chart-card">
+            <div class="chart-title">Hashboard Max Temp (°C)</div>
+            <canvas id="chartTemp" class="chart" width="1100" height="200"></canvas>
+          </div>
+          <div class="card card--wide chart-card">
+            <div class="chart-title">Workmode (0=Eco, 1=Std, 2=Super, 3=Standby)</div>
+            <canvas id="chartMode" class="chart" width="1100" height="120"></canvas>
+          </div>
+        </section>
+
+        <!-- POOLS -->
+        <section class="tab-panel" data-tab-panel="pools" hidden>
+          <div class="panel-head">
+            <h2>Pool Library</h2>
+            <div class="panel-actions">
+              <button class="btn btn--primary" id="btnAddPool">+ Add pool</button>
+            </div>
+          </div>
+          <div class="hint">
+            <strong>Pool switching note.</strong> The Avalon Q applies a pool
+            change on next reboot. To make a pool switch take effect right
+            away, enable <em>reboot after pool switch</em> on the rule (or
+            check the box when manually applying). Reboots forfeit any
+            in-flight shares — keep that in mind for high-priority work.
+          </div>
+          <div id="poolList" class="pool-list"></div>
+        </section>
+
+        <!-- SCHEDULE -->
+        <section class="tab-panel" data-tab-panel="schedule" hidden>
+          <div class="panel-head">
+            <h2>Schedule</h2>
+            <div class="panel-actions">
+              <button class="btn btn--primary" id="btnAddRule">+ Add rule</button>
+              <button class="btn" id="btnSaveSchedule">Save</button>
+            </div>
+          </div>
+          <div class="card card--wide">
+            <div class="form-grid">
+              <label>
+                <span>Timezone</span>
+                <input list="tzList" id="schTimezone" placeholder="e.g. America/Phoenix"/>
+                <datalist id="tzList"></datalist>
+              </label>
+              <label>
+                <span>Schedule enabled</span>
+                <select id="schEnabled">
+                  <option value="true">Enabled</option>
+                  <option value="false">Disabled</option>
+                </select>
+              </label>
+              <label>
+                <span>Default action (no rule matches)</span>
+                <select id="schDefault" data-action-select="default"></select>
+              </label>
+            </div>
+          </div>
+          <div id="ruleList" class="rule-list"></div>
+        </section>
+
+        <!-- CONTROL -->
+        <section class="tab-panel" data-tab-panel="control" hidden>
+          <div class="panel-head">
+            <h2>Manual Control</h2>
+            <div class="panel-actions muted small">Direct commands bypass the schedule until next poll.</div>
+          </div>
+          <div class="card card--wide">
+            <div class="card__label">Workmode</div>
+            <div class="row row--wrap">
+              <button class="btn" data-cmd="eco">Eco (~800 W)</button>
+              <button class="btn" data-cmd="standard">Standard (~1300 W)</button>
+              <button class="btn" data-cmd="super">Super (~1600 W)</button>
+            </div>
+          </div>
+          <div class="card card--wide">
+            <div class="card__label">Power state</div>
+            <div class="row row--wrap">
+              <button class="btn" data-cmd="soft_off">Soft-off (standby)</button>
+              <button class="btn" data-cmd="soft_on">Soft-on (wake)</button>
+              <button class="btn btn--danger" data-cmd="reboot">Reboot miner</button>
+            </div>
+          </div>
+          <div class="card card--wide">
+            <div class="card__label">LCD display</div>
+            <div class="row row--wrap">
+              <button class="btn" data-cmd="lcd_on">LCD on</button>
+              <button class="btn" data-cmd="lcd_off">LCD off</button>
+            </div>
+          </div>
+          <div class="card card--wide">
+            <div class="card__label">Override scheduler</div>
+            <div class="form-grid">
+              <label>
+                <span>Action</span>
+                <select id="ovAction" data-action-select="override"></select>
+              </label>
+              <label>
+                <span>Duration (minutes; blank = indefinite)</span>
+                <input id="ovMinutes" type="number" min="1" placeholder="e.g. 60"/>
+              </label>
+            </div>
+            <div class="row">
+              <button class="btn btn--primary" id="btnSetOverride">Set override</button>
+              <button class="btn btn--ghost" id="btnClearOverride2">Clear override</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section class="tab-panel" data-tab-panel="settings" hidden>
+          <div class="panel-head">
+            <h2>Connection</h2>
+          </div>
+          <div class="card card--wide">
+            <div class="form-grid">
+              <label><span>Display name</span><input id="cfgName"/></label>
+              <label><span>Host or IP</span><input id="cfgHost" placeholder="e.g. 192.168.1.114"/></label>
+              <label><span>API port</span><input id="cfgPort" type="number" value="4028"/></label>
+              <label><span>Username</span><input id="cfgUser" value="root"/></label>
+              <label><span>Password (blank = keep current)</span><input id="cfgPass" type="password" placeholder="admin"/></label>
+              <label><span>Poll interval (seconds)</span><input id="cfgPoll" type="number" min="5" value="30"/></label>
+              <label><span>Enabled</span>
+                <select id="cfgEnabled">
+                  <option value="true">Enabled (poll loop running)</option>
+                  <option value="false">Disabled</option>
+                </select>
+              </label>
+            </div>
+            <div class="row">
+              <button class="btn btn--primary" id="btnSaveConn">Save</button>
+              <button class="btn" id="btnTestConn">Test now</button>
+              <button class="btn btn--danger" id="btnDeleteMiner">Delete miner</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- EVENTS -->
+        <section class="tab-panel" data-tab-panel="events" hidden>
+          <div class="panel-head">
+            <h2>Recent Events</h2>
+            <div class="panel-actions">
+              <button class="btn btn--ghost" id="btnReloadEvents">Reload</button>
+            </div>
+          </div>
+          <div class="card card--wide">
+            <table class="event-table">
+              <thead><tr><th>Time</th><th>Kind</th><th>Detail</th></tr></thead>
+              <tbody id="eventBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============== Modals ============== -->
+  <div class="modal" id="modalAddMiner" hidden>
+    <div class="modal__inner">
+      <div class="modal__head">
+        <h2>Add miner</h2>
+        <button class="btn btn--ghost btn--small" data-close>✕</button>
+      </div>
+      <div class="form-grid">
+        <label><span>Display name</span><input id="addName" placeholder="e.g. Garage Q"/></label>
+        <label><span>Host / IP</span><input id="addHost" placeholder="192.168.1.114"/></label>
+        <label><span>API port</span><input id="addPort" type="number" value="4028"/></label>
+        <label><span>Username</span><input id="addUser" value="root"/></label>
+        <label><span>Password</span><input id="addPass" type="password" value="admin"/></label>
+        <label><span>Poll interval (sec)</span><input id="addPoll" type="number" value="30"/></label>
+      </div>
+      <div class="row">
+        <button class="btn btn--primary" id="btnConfirmAdd">Add</button>
+        <button class="btn" data-close>Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalScan" hidden>
+    <div class="modal__inner modal__inner--wide">
+      <div class="modal__head">
+        <h2>Scan LAN</h2>
+        <button class="btn btn--ghost btn--small" data-close>✕</button>
+      </div>
+      <div class="form-grid">
+        <label><span>Subnet (CIDR)</span><input id="scanCidr" placeholder="auto-detect"/></label>
+      </div>
+      <div class="row">
+        <button class="btn btn--primary" id="btnRunScan">Scan</button>
+        <span class="muted small" id="scanStatus"></span>
+      </div>
+      <div id="scanResults" class="scan-results"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalAddPool" hidden>
+    <div class="modal__inner">
+      <div class="modal__head">
+        <h2>Add pool</h2>
+        <button class="btn btn--ghost btn--small" data-close>✕</button>
+      </div>
+      <div class="form-grid">
+        <label><span>Pool name</span><input id="poolName" placeholder="e.g. AxeDGB Solo"/></label>
+        <label><span>URL</span><input id="poolUrl" placeholder="stratum+tcp://host:port"/></label>
+        <label><span>Worker</span><input id="poolWorker" placeholder="username.workerN"/></label>
+        <label><span>Password</span><input id="poolPwd" value="x"/></label>
+        <label class="full"><span>Notes</span><input id="poolNotes" placeholder="Optional"/></label>
+      </div>
+      <div class="row">
+        <button class="btn btn--primary" id="btnConfirmAddPool">Add</button>
+        <button class="btn" data-close>Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== Templates ============== -->
+  <template id="ruleTemplate">
+    <div class="rule" data-rule>
+      <div class="rule__head">
+        <input class="rule__name" placeholder="Rule name" data-field="name"/>
+        <div class="rule__head-actions">
+          <label class="switch">
+            <input type="checkbox" data-field="enabled" checked/><span>Enabled</span>
+          </label>
+          <button class="btn btn--ghost btn--small" data-action="delete">Delete</button>
+        </div>
+      </div>
+      <div class="rule__grid">
+        <label>
+          <span>Action</span>
+          <select data-field="action" data-action-select="rule"></select>
+        </label>
+        <label><span>Start (HH:MM)</span><input type="time" data-field="start" value="16:00"/></label>
+        <label><span>End (HH:MM)</span><input type="time" data-field="end" value="19:00"/></label>
+        <label><span>Priority</span><input type="number" data-field="priority" value="0"/></label>
+      </div>
+      <div class="rule__days" data-field="days">
+        <span class="rule__days-label">Days:</span>
+        <label class="day"><input type="checkbox" value="0"/><span>Mon</span></label>
+        <label class="day"><input type="checkbox" value="1"/><span>Tue</span></label>
+        <label class="day"><input type="checkbox" value="2"/><span>Wed</span></label>
+        <label class="day"><input type="checkbox" value="3"/><span>Thu</span></label>
+        <label class="day"><input type="checkbox" value="4"/><span>Fri</span></label>
+        <label class="day"><input type="checkbox" value="5"/><span>Sat</span></label>
+        <label class="day"><input type="checkbox" value="6"/><span>Sun</span></label>
+      </div>
+      <details class="rule__pool-opts" data-pool-opts hidden>
+        <summary>Pool-action options</summary>
+        <div class="rule__grid">
+          <label class="full">
+            <span>Reboot miner after pool switch (applies pool immediately)</span>
+            <select data-field="reboot_after_pool_switch">
+              <option value="false">No (recommended; pool changes on next reboot)</option>
+              <option value="true">Yes (force reboot — instant switch, loses in-flight shares)</option>
+            </select>
+          </label>
+          <label class="full">
+            <span>Also set workmode (chained with pool switch)</span>
+            <select data-field="chain_workmode">
+              <option value="">No change</option>
+              <option value="eco">Eco</option>
+              <option value="standard">Standard</option>
+              <option value="super">Super</option>
+            </select>
+          </label>
+        </div>
+      </details>
+      <details class="rule__season">
+        <summary>Season (optional)</summary>
+        <div class="rule__grid">
+          <label><span>Season start (MM-DD)</span><input type="text" data-field="season_start" placeholder="11-01"/></label>
+          <label><span>Season end (MM-DD)</span><input type="text" data-field="season_end" placeholder="04-30"/></label>
+        </div>
+      </details>
+    </div>
+  </template>
+
+  <template id="poolTemplate">
+    <div class="pool" data-pool>
+      <div class="pool__head">
+        <input class="pool__name" data-field="name"/>
+        <div class="pool__actions">
+          <button class="btn btn--small" data-action="apply">Apply</button>
+          <button class="btn btn--small" data-action="apply-reboot">Apply + reboot</button>
+          <button class="btn btn--ghost btn--small" data-action="save">Save</button>
+          <button class="btn btn--ghost btn--small" data-action="delete">Delete</button>
+        </div>
+      </div>
+      <div class="pool__grid">
+        <label class="full"><span>URL</span><input data-field="url"/></label>
+        <label><span>Worker</span><input data-field="worker"/></label>
+        <label><span>Password</span><input data-field="worker_password" value="x"/></label>
+        <label class="full"><span>Notes</span><input data-field="notes"/></label>
+      </div>
+      <div class="pool__id muted small">id: <span data-pool-id></span></div>
+    </div>
+  </template>
+
+  <template id="minerCardTemplate">
+    <button class="miner-card" type="button" data-miner-card>
+      <div class="miner-card__head">
+        <span class="dot"></span>
+        <span class="miner-card__name"></span>
+      </div>
+      <div class="miner-card__addr"></div>
+      <div class="miner-card__stats">
+        <span class="miner-card__ths">— TH/s</span>
+        <span class="miner-card__mode">—</span>
+      </div>
+    </button>
+  </template>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

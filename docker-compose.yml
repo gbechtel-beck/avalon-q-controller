@@ -1,0 +1,22 @@
+version: "3.7"
+
+# Standalone deployment — use this if you want to run Avalon Q Controller
+# without the Umbrel community store. Drop into Portainer on Umbrel as a
+# stack, or run with `docker compose up -d` on any Linux host.
+
+services:
+  avalon-q-controller:
+    build: .
+    image: avalon-q-controller:local
+    container_name: avalon-q-controller
+    restart: unless-stopped
+    ports:
+      - "8118:8000"
+    environment:
+      APP_DATA_DIR: /data
+      LOG_LEVEL: INFO
+    volumes:
+      - avalonq_data:/data
+
+volumes:
+  avalonq_data:
