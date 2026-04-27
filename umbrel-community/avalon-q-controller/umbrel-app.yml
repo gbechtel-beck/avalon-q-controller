@@ -3,7 +3,7 @@ id: avalon-q-controller
 name: Avalon Q Controller
 tagline: Schedule, monitor, and rotate pools across a fleet of Avalon Q miners
 category: bitcoin
-version: "2.0.0"
+version: "2.0.2"
 port: 8118
 description: >-
   A self-hosted controller and scheduler for one or more Canaan Avalon Q home

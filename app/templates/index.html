@@ -204,6 +204,9 @@
               <button class="btn" id="btnSaveSchedule">Save</button>
             </div>
           </div>
+          <div class="hint">
+            <strong>How rules work.</strong> Each rule defines an action (workmode, soft-off, pool switch, etc.) for a specific time window on selected days. When the window <em>ends</em>, control passes to whatever rule covers the next moment, or to the <strong>default action</strong> if no rule matches. Rules don't auto-revert — you need a follow-up rule (or default action) to bring the miner back. <strong>Priority</strong> breaks ties when two rules overlap: higher number wins. Use it for "exception" rules like APS on-peak that should trump a general "always run Super" rule.
+          </div>
           <div class="card card--wide">
             <div class="form-grid">
               <label>

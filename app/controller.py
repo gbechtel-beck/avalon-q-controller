@@ -291,16 +291,19 @@ class Controller:
     ) -> str | None:
         cur_mode = current_stats.get("workmode")
         cur_name = current_stats.get("workmode_name")
+        # STATE field is the truth for soft-off: 1=working, 2=idle (standby), 0=init.
+        # WORKMODE never goes to 3 — softoff is a separate state on this firmware.
+        is_standby = current_stats.get("state") == 2
 
         if target == "off":
-            if cur_mode == WORKMODE_STANDBY:
+            if is_standby:
                 return None
             client.soft_off()
             self.db.log_event(miner_id, "apply_soft_off", {"from": cur_name})
             return "soft_off"
 
         if target == "on":
-            if cur_mode == WORKMODE_STANDBY:
+            if is_standby:
                 client.soft_on()
                 self.db.log_event(miner_id, "apply_soft_on", {})
                 return "soft_on"
@@ -313,18 +316,25 @@ class Controller:
         }
         if target in mode_map:
             desired = mode_map[target]
-            if cur_mode == WORKMODE_STANDBY:
+            applied_parts = []
+            if is_standby:
                 client.soft_on()
                 self.db.log_event(miner_id, "apply_soft_on", {"reason": "wake_for_workmode"})
-            if cur_mode == desired:
+                applied_parts.append("soft_on")
+            # Always set the workmode if waking from standby (mode might be
+            # the same numerically but the miner needs the explicit set after
+            # waking) OR if the current mode differs from desired.
+            if is_standby or cur_mode != desired:
+                client.set_workmode(desired)
+                self.db.log_event(
+                    miner_id,
+                    "apply_workmode",
+                    {"from": cur_name, "to": WORKMODE_NAMES[desired]},
+                )
+                applied_parts.append(f"workmode_{target}")
+            if not applied_parts:
                 return None
-            client.set_workmode(desired)
-            self.db.log_event(
-                miner_id,
-                "apply_workmode",
-                {"from": cur_name, "to": WORKMODE_NAMES[desired]},
-            )
-            return f"workmode_{target}"
+            return "+".join(applied_parts)
         return None
 
     def _reconcile_pool(
@@ -356,7 +366,7 @@ class Controller:
             return None
 
         # If the miner is in standby, wake it before changing pool.
-        if current_stats.get("workmode") == WORKMODE_STANDBY:
+        if current_stats.get("state") == 2:
             client.soft_on()
             self.db.log_event(miner_id, "apply_soft_on", {"reason": "wake_for_pool"})
 
