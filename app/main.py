@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Avalon Q Controller",
-    version="2.0.2",
+    version="2.0.3",
     lifespan=lifespan,
 )
 
@@ -143,6 +143,14 @@ class ApplyPoolRequest(BaseModel):
 async def index() -> HTMLResponse:
     html_path = TEMPLATES_DIR / "index.html"
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Browsers request /favicon.ico by default; serve our 32px PNG."""
+    from fastapi.responses import FileResponse
+    fav_path = STATIC_DIR / "favicon-32.png"
+    return FileResponse(str(fav_path), media_type="image/png")
 
 
 # =====================================================================

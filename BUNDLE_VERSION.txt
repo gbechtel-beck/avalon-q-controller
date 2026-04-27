@@ -1,1 +1,1 @@
-v2.0.2 - 2026-04-27T00:42:22Z - STATE detection + auto-wake + UI hints
+v2.0.3 - 2026-04-27T01:40:42Z - favicon + cache-busting

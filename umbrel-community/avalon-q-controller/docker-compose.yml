@@ -7,7 +7,7 @@ services:
       APP_PORT: 8000
 
   web:
-    image: ghcr.io/gbechtel-beck/avalon-q-controller:2.0.2
+    image: ghcr.io/gbechtel-beck/avalon-q-controller:2.0.3
     restart: on-failure
     stop_grace_period: 1m
     environment:
