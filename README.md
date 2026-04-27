@@ -4,6 +4,8 @@ Self-hosted controller and scheduler for one or more **Canaan Avalon Q** home Bi
 
 ![Dashboard](https://raw.githubusercontent.com/gbechtel-beck/umbrelsolostrike-app-store/main/umbrelsolostrike-avalon-q-controller/1.jpg)
 
+> **Already run Home Assistant?** Check out [c7ph3r10/ha_avalonq](https://github.com/c7ph3r10/ha_avalonq) — a great HA template for the Avalon Q. This project is for everyone else: Umbrel users who want one-click install, multi-miner support, scheduled pool rotation, and proper 24-hour history charts without setting up Home Assistant.
+
 ---
 
 ## Why this exists
