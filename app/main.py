@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Avalon Q Controller",
-    version="2.0.1",
+    version="2.0.0",
     lifespan=lifespan,
 )
 

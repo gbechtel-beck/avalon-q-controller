@@ -21,7 +21,6 @@ from __future__ import annotations
 import json
 import logging
 import socket
-import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -139,35 +138,44 @@ class AvalonClient:
 
     # ---- power / sleep ------------------------------------------------
     def soft_off(self) -> dict[str, Any]:
-        """Activate standby mode. softoff takes a delay arg: 1:<unix_ts+5>"""
-        target_ts = int(time.time()) + 5
-        return self._ascset(f"softoff,1:{target_ts}")
+        """Activate standby mode. Hashpower drops, network stays on."""
+        # The Avalon Q exposes softoff via workmode=3.
+        return self._ascset(
+            f"softoff,{self.config.username},{self.config.password}"
+        )
 
     def soft_on(self) -> dict[str, Any]:
         """Wake from standby; returns to last workmode."""
-        target_ts = int(time.time()) + 5
-        return self._ascset(f"softon,1:{target_ts}")
+        return self._ascset(
+            f"softon,{self.config.username},{self.config.password}"
+        )
 
     def reboot(self) -> dict[str, Any]:
-        return self._ascset("reboot,0")
+        return self._ascset(
+            f"reboot,{self.config.username},{self.config.password},0"
+        )
 
     # ---- workmode -----------------------------------------------------
     def set_workmode(self, mode: int) -> dict[str, Any]:
         if mode not in WORKMODE_NAMES:
             raise ValueError(f"Invalid workmode: {mode}")
-        # Standby is handled via soft_off(), not via workmode set.
+        # Standby is handled via soft_off(), not workmode set.
         if mode == WORKMODE_STANDBY:
             return self.soft_off()
-        # workmode requires the literal "set" keyword as the third arg
-        # before the numeric mode (0=Eco, 1=Standard, 2=Super).
-        return self._ascset(f"workmode,set,{mode}")
+        return self._ascset(
+            f"workmode,{self.config.username},{self.config.password},{mode}"
+        )
 
     # ---- LCD ----------------------------------------------------------
     def lcd_on(self) -> dict[str, Any]:
-        return self._ascset("lcd,0:1")
+        return self._ascset(
+            f"led,{self.config.username},{self.config.password},1"
+        )
 
     def lcd_off(self) -> dict[str, Any]:
-        return self._ascset("lcd,0:0")
+        return self._ascset(
+            f"led,{self.config.username},{self.config.password},0"
+        )
 
     # ---- pool management ---------------------------------------------
     def set_pool(
@@ -178,9 +186,11 @@ class AvalonClient:
     ) -> dict[str, Any]:
         """
         Set the primary pool. Note: takes effect after reboot per Canaan API.
-        Wire format (verified): ascset|0,setpool,<url>,<worker>,<password>
         """
-        return self._ascset(f"setpool,{url},{worker},{worker_password}")
+        return self._ascset(
+            f"setpool,{self.config.username},{self.config.password},"
+            f"{url},{worker},{worker_password}"
+        )
 
 
 def _ascset_ok(raw: str) -> bool:
@@ -217,9 +227,8 @@ def parse_summary(summary: dict[str, Any]) -> dict[str, Any]:
 
 def parse_stats(stats: dict[str, Any]) -> dict[str, Any]:
     """
-    Pull workmode, temperature, fan, power, hashrate from a stats response.
-    The Avalon Q embeds these as space-separated KEY[value] tokens inside
-    a string field named "MM ID0:Summary" within the second STATS entry.
+    Pull workmode, temperature, fan, power from a stats response.
+    The Avalon Q embeds these in the second STATS entry as "MM ID" key/values.
     """
     out: dict[str, Any] = {
         "workmode": None,
@@ -234,11 +243,11 @@ def parse_stats(stats: dict[str, Any]) -> dict[str, Any]:
     }
     entries = stats.get("STATS") or []
     for entry in entries:
+        # Look for a key shaped like "MM ID0" carrying space-separated tokens.
         for key, val in entry.items():
             if not isinstance(val, str):
                 continue
-            # The MM summary blob always contains WORKMODE — use that as marker.
-            if "WORKMODE[" in val:
+            if "WORKMODE" in val or "MTmax" in val or "Cur_Load" in val:
                 _scan_mm_payload(val, out)
     if out["workmode"] is not None:
         out["workmode_name"] = WORKMODE_NAMES.get(out["workmode"])
@@ -246,60 +255,34 @@ def parse_stats(stats: dict[str, Any]) -> dict[str, Any]:
 
 
 def _scan_mm_payload(payload: str, out: dict[str, Any]) -> None:
-    """
-    The MM payload is KEY[value] tokens, but `value` may contain spaces
-    (e.g. PS[0 1213 2455 64 1594 2456 1698]) and keys may contain spaces
-    too (e.g. "Nonce Mask[25]"). Parse by walking bracket pairs instead
-    of splitting on whitespace.
-    """
-    i = 0
-    n = len(payload)
-    while i < n:
-        # Find next opening bracket
-        ob = payload.find("[", i)
-        if ob == -1:
-            break
-        cb = payload.find("]", ob + 1)
-        if cb == -1:
-            break
-        # Key is the word(s) between the previous boundary and this open bracket.
-        key_start = i
-        # The key starts after the last whitespace before ob; trim leading spaces.
-        raw_key = payload[key_start:ob].strip()
-        # If the raw key contains a space, the actual key is the last
-        # word(s) before the bracket — but Avalon uses "Nonce Mask" so
-        # we keep the whole stripped string. Some sane normalization:
-        # the parser's interest is matching key names exactly.
-        key = raw_key
-        value = payload[ob + 1:cb].strip()
-        i = cb + 1
-
+    """The MM payload is space-separated KEY[value] tokens."""
+    for token in payload.split():
+        if "[" not in token or "]" not in token:
+            continue
+        key, _, rest = token.partition("[")
+        value = rest.rstrip("]")
+        # Some tokens carry comma-separated numeric arrays.
         if key == "WORKMODE":
             out["workmode"] = _safe_int(value)
         elif key == "ITemp":
             out["temp_chassis"] = _safe_float(value)
-        elif key == "TMax":
-            out["temp_max"] = _safe_float(value)
-        elif key == "TAvg":
-            out["temp_avg"] = _safe_float(value)
+        elif key == "MTmax":
+            # MTmax[a,b,c] - take the highest
+            nums = [_safe_float(v) for v in value.split(",") if v]
+            nums = [n for n in nums if n is not None]
+            if nums:
+                out["temp_max"] = max(nums)
+        elif key == "MTavg":
+            nums = [_safe_float(v) for v in value.split(",") if v]
+            nums = [n for n in nums if n is not None]
+            if nums:
+                out["temp_avg"] = sum(nums) / len(nums)
         elif key == "FanR":
-            out["fan_pct"] = _safe_float(value.rstrip("%"))
-        elif key == "GHSspd":
-            ghs = _safe_float(value)
-            if ghs is not None:
-                out["ths"] = ghs / 1000.0
-        elif key == "MPO":
-            # Rated max power output — used as fallback if PS not present
-            if out["load_w"] is None:
-                out["load_w"] = _safe_float(value)
-        elif key == "PS":
-            # PS[a Vin Iin b Pin Pout c] — space-separated PSU values.
-            # Index 4 is AC input wattage (the "wall draw" reading).
-            parts = value.split()
-            if len(parts) >= 5:
-                pin = _safe_float(parts[4])
-                if pin is not None and pin > 0:
-                    out["load_w"] = pin
+            out["fan_pct"] = _safe_float(value)
+        elif key == "Cur_Load":
+            out["load_w"] = _safe_float(value)
+        elif key == "THSspd":
+            out["ths"] = _safe_float(value)
 
 
 def _safe_int(s: str) -> int | None:

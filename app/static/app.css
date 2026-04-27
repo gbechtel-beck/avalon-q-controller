@@ -609,7 +609,6 @@ select {
 .panel-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
 /* ---------------- Modals ---------------- */
-.modal[hidden] { display: none !important; }
 .modal {
   position: fixed;
   inset: 0;
