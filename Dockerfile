@@ -14,6 +14,7 @@ RUN pip install -r requirements.txt
 
 # Copy application
 COPY app /srv/app
+COPY BUNDLE_VERSION.txt /srv/app/BUNDLE_VERSION.txt
 
 # Data volume for settings & event log
 VOLUME ["/data"]

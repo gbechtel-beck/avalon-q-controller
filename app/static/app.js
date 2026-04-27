@@ -270,6 +270,20 @@
     $("#schedSource").textContent = srcText;
     $("#schedApplied").textContent = status.applied_action || "—";
     $("#schedPoll").textContent = formatTime(status.last_poll);
+
+    // Pool-pending warning banner
+    const banner = $("#poolPendingBanner");
+    if (banner) {
+      const pp = status.pool_pending;
+      if (pp) {
+        const tail = pp.target_url.split("://").pop() || pp.target_url;
+        const cur = (pp.active_url || "").split("://").pop() || "unknown";
+        banner.innerHTML = `<strong>Pool change pending.</strong> Setpool sent for <code>${tail}</code> but the miner is still on <code>${cur}</code>. The Avalon Q firmware applies pool changes on next reboot — enable <em>reboot after pool switch</em> on the rule, or click reboot manually.`;
+        banner.hidden = false;
+      } else {
+        banner.hidden = true;
+      }
+    }
   }
 
   function workmodePower(name) {

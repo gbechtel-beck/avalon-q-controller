@@ -200,6 +200,26 @@ class Controller:
             applied = self._reconcile(client, miner_id, target, status["stats"])
             status["applied_action"] = applied
 
+        # Pool-pending warning: if the active target is a pool:N and the
+        # miner's currently-active pool URL doesn't match the target pool's
+        # URL, surface that on the dashboard. The Avalon Q firmware doesn't
+        # apply pool changes until the next reboot, so a "pending" state is
+        # normal between setpool and reboot.
+        if target.startswith("pool:"):
+            try:
+                pool_id = int(target.split(":", 1)[1])
+                pool = self.db.get_pool(pool_id)
+                cur_pool_url = (status["stats"].get("pool_url") or "").strip()
+                if pool and cur_pool_url and cur_pool_url != pool.url:
+                    status["pool_pending"] = {
+                        "target_pool_id": pool_id,
+                        "target_url": pool.url,
+                        "active_url": cur_pool_url,
+                        "hint": "Setpool sent. Avalon Q applies pool changes on next reboot.",
+                    }
+            except (ValueError, AttributeError):
+                pass
+
         self.db.set_last_status(miner_id, status)
         self._record_sample(miner_id, status)
         return status
@@ -360,9 +380,12 @@ class Controller:
         last_pool_id = state.get("last_pool_id")
         cur_url = (current_stats.get("pool_url") or "").strip()
 
-        # Idempotency: if we recorded this pool last AND the miner's current
-        # active pool URL still matches, no action.
-        if last_pool_id == pool_id and cur_url and cur_url == pool.url:
+        # Idempotency: if we already recorded this pool as the target, we've
+        # sent the setpool command. The Avalon Q firmware may not reflect the
+        # change in stats until the next reboot, so we cannot rely on
+        # cur_url == pool.url as the "applied" signal — that would cause us
+        # to re-fire setpool every poll cycle. Trust last_pool_id instead.
+        if last_pool_id == pool_id:
             return None
 
         # If the miner is in standby, wake it before changing pool.
