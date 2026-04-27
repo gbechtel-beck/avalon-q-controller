@@ -172,6 +172,18 @@ Open issues for specific requests.
 
 ---
 
+## AI involvement
+
+Transparent disclosure: I'm not a professional developer, and I'm learning as I go. This project was built as a pair-programming collaboration with [Claude](https://www.anthropic.com/claude), primarily Opus 4.7, using the Claude Code CLI.
+
+Honestly, Claude is exceptional at this. Give it a clear goal, real telemetry from your hardware, and a feedback loop, and it produces code that's better-structured, better-documented, and better-tested than what most of us would write under deadline pressure. The split of work is roughly: I make the architecture decisions, set the design direction, define what each feature should do, and test everything against my own Avalon Q. Claude writes most of the code, catches my bugs, and politely tells me when an idea won't work. Every diff goes through me before it's committed — what doesn't fit gets rejected and reworked. Bugs that ship are mine; they got through my review.
+
+A lot of this project's polish comes from Claude pushing back on my first drafts and proposing better designs. The wire format reverse-engineering, the SQLite schema, the standby-detection bug fix, the schedule rule semantics — every one of those got iterated on multiple times until it was actually right. Building this taught me things about API design, async Python, and Avalon Q internals that I didn't know last week.
+
+If that arrangement bothers you, that's fair feedback and I'd rather you know upfront than find out later. If it doesn't, the code is MIT-licensed and works the same regardless of who typed it.
+
+---
+
 ## License
 
 MIT. Use it, fork it, modify it, ship it.
